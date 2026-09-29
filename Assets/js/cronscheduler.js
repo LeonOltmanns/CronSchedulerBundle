@@ -1,76 +1,101 @@
-Mautic.cronschedulerOnLoad = function (container, response) {
+/**
+ * Scheduled Jobs plugin - JavaScript.
+ *
+ * Rules for this file:
+ * 1. Define every function at file level. Do NOT define them inside
+ *    Mautic.cronschedulerOnLoad. Mautic runs that hook only after it loads page
+ *    content, so a function inside it does not exist before that time.
+ * 2. Bind document-level events once, with the ".cronScheduler" namespace.
+ *    Mautic runs the OnLoad hook again after each page change. Handlers
+ *    bound inside the hook would stack up.
+ */
 
-    Mautic.cronSchedulerToggleTimeframes = function () {
-        var mode = mQuery('input[name="cronscheduler[triggerMode]"]:checked').val();
+/**
+ * Show only the fields that belong to the selected trigger mode.
+ */
+Mautic.cronSchedulerToggleTimeframes = function () {
+    var mode = mQuery('input[name="cronscheduler[triggerMode]"]:checked').val();
 
-        mQuery('#triggerInterval, #triggerDate, #cron-notation').addClass('hide');
+    mQuery('#triggerInterval, #triggerDate, #cron-notation').addClass('hide');
 
-        if (mode === 'interval') {
-            mQuery('#triggerInterval').removeClass('hide');
-        }
+    if (mode === 'interval') {
+        mQuery('#triggerInterval').removeClass('hide');
+    }
 
-        if (mode === 'date') {
-            mQuery('#triggerDate').removeClass('hide');
-        }
+    if (mode === 'date') {
+        mQuery('#triggerDate').removeClass('hide');
+    }
 
-        if (mode === 'cron') {
-            mQuery('#cron-notation').removeClass('hide');
-        }
-    };
+    if (mode === 'cron') {
+        mQuery('#cron-notation').removeClass('hide');
+    }
+};
 
-    Mautic.cronSchedulerInit = function () {
-        Mautic.cronSchedulerToggleTimeframes();
+/**
+ * Show the day-of-week settings only for interval units of one day or more.
+ */
+Mautic.cronSchedulerShowHideIntervalSettings = function () {
+    var unit = mQuery('#cronscheduler_triggerIntervalUnit').val();
 
-        if (!mQuery('#cronscheduler_triggerHour').length) {
-            return;
-        }
+    if (unit === 'i' || unit === 'h') {
+        mQuery('#interval_settings,#interval_settings_days').addClass('hide');
+    } else {
+        mQuery('#interval_settings,#interval_settings_days').removeClass('hide');
+    }
+};
 
+/**
+ * The "week days" checkbox selects Monday to Friday.
+ */
+Mautic.cronSchedulerSelectDOW = function () {
+    if (mQuery('#cronscheduler_triggerRestrictedDaysOfWeek_7').prop('checked')) {
+        mQuery(
+            '#cronscheduler_triggerRestrictedDaysOfWeek_0,' +
+            '#cronscheduler_triggerRestrictedDaysOfWeek_1,' +
+            '#cronscheduler_triggerRestrictedDaysOfWeek_2,' +
+            '#cronscheduler_triggerRestrictedDaysOfWeek_3,' +
+            '#cronscheduler_triggerRestrictedDaysOfWeek_4'
+        ).prop('checked', true);
+    }
+
+    mQuery('#cronscheduler_triggerRestrictedDaysOfWeek_7').prop('checked', false);
+};
+
+/**
+ * Set the start state of the job form. Safe to call many times.
+ * Does nothing on pages that have no job form.
+ */
+Mautic.cronSchedulerInit = function () {
+    if (!mQuery('input[name="cronscheduler[triggerMode]"]').length) {
+        return;
+    }
+
+    Mautic.cronSchedulerToggleTimeframes();
+
+    if (mQuery('#cronscheduler_triggerIntervalUnit').length) {
         Mautic.cronSchedulerShowHideIntervalSettings();
+    }
+};
 
-        mQuery('#cronscheduler_triggerIntervalUnit').on(
-            'change',
-            Mautic.cronSchedulerShowHideIntervalSettings
-        );
-
-        mQuery('[id^="cronscheduler_triggerRestrictedDaysOfWeek_"]').on(
-            'change',
-            Mautic.cronSchedulerSelectDOW
-        );
-    };
-
-    Mautic.cronSchedulerShowHideIntervalSettings = function () {
-        var unit = mQuery('#cronscheduler_triggerIntervalUnit').val();
-
-        if (unit === 'i' || unit === 'h') {
-            mQuery('#interval_settings,#interval_settings_days').addClass('hide');
-        } else {
-            mQuery('#interval_settings,#interval_settings_days').removeClass('hide');
-        }
-    };
-
-    Mautic.cronSchedulerSelectDOW = function () {
-        if (mQuery('#cronscheduler_triggerRestrictedDaysOfWeek_7').prop('checked')) {
-            mQuery(
-                '#cronscheduler_triggerRestrictedDaysOfWeek_0,' +
-                '#cronscheduler_triggerRestrictedDaysOfWeek_1,' +
-                '#cronscheduler_triggerRestrictedDaysOfWeek_2,' +
-                '#cronscheduler_triggerRestrictedDaysOfWeek_3,' +
-                '#cronscheduler_triggerRestrictedDaysOfWeek_4'
-            ).prop('checked', true);
-        }
-
-        mQuery('#cronscheduler_triggerRestrictedDaysOfWeek_7').prop('checked', false);
-    };
-
-    mQuery(document).on(
-        'change',
-        'input[name="cronscheduler[triggerMode]"]',
-        function () {
-            Mautic.cronSchedulerToggleTimeframes();
-        }
-    );
+/**
+ * Mautic hook. Runs when content with mauticContent "cronscheduler" loads.
+ */
+Mautic.cronschedulerOnLoad = function (container, response) {
     Mautic.cronSchedulerInit();
 };
+
+// Delegated events: they work for form elements that Mautic adds later with AJAX.
+mQuery(document)
+    .off('.cronScheduler')
+    .on('change.cronScheduler', 'input[name="cronscheduler[triggerMode]"]', function () {
+        Mautic.cronSchedulerToggleTimeframes();
+    })
+    .on('change.cronScheduler', '#cronscheduler_triggerIntervalUnit', function () {
+        Mautic.cronSchedulerShowHideIntervalSettings();
+    })
+    .on('change.cronScheduler', '[id^="cronscheduler_triggerRestrictedDaysOfWeek_"]', function () {
+        Mautic.cronSchedulerSelectDOW();
+    });
 
 Mautic.showRecentJobLogs = function (e) {
 

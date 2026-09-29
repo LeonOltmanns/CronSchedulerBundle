@@ -133,9 +133,7 @@ class CronSchedulerType extends AbstractType
             'placeholder'       => false,
             'required'          => false,
             'data'     => $triggerMode,
-            'attr' => [
-                'onchange' => 'Mautic.cronSchedulerToggleTimeframes();',
-            ],
+            // No inline "onchange" here. cronscheduler.js listens for the change event.
         ]);
 
         $builder->add(
